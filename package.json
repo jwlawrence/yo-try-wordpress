@@ -1,42 +1,42 @@
 {
-  "name": "generator-yo-wordpress",
-  "version": "1.4.9",
-  "description": "Yeoman generator for Wordpress projects and plugins",
-  "homepage": "https://github.com/romainberger/yeoman-wordpress",
-  "author":{
-    "name": "Romain Berger",
-    "email": "romain@romainberger.com",
-    "url": "http://romainberger.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/romainberger/yeoman-wordpress.git"
-  },
-  "bugs": {
-    "url" : "https://github.com/romainberger/yeoman-wordpress/issues",
-    "email" : "romain@romainberger.com"
-  },
-  "dependencies": {
-    "yeoman-generator": ">=0.13.4",
-    "rimraf": ">=2.1.4",
-    "semver": ">=2.0.10"
-  },
-  "peerDependencies": {
-    "yo": ">=1.0.4"
-  },
-  "engines": {
-    "node": ">=0.8.0",
-    "npm": ">=1.2.10"
-  },
-  "keywords": [
-    "yeoman",
-    "yeoman-generator",
-    "yo",
-    "wordpress",
-    "generator",
-    "cli",
-    "tool",
-    "cms",
-    "development"
-  ]
+	"name": "generator-try-wordpress",
+	"version": "1.4.9",
+	"description": "Yeoman generator for TRY Wordpress projects and plugins",
+	"homepage": "https://github.com/WSBaltimore/yeoman-wordpress",
+	"author": {
+		"name": "Josh Lawrence",
+		"email": "jlawrence@webershandwick.com",
+		"url": "http://webershandwick.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/WSBaltimore/yeoman-wordpress.git"
+	},
+	"bugs": {
+		"url": "https://github.com/WSBaltimore/yeoman-wordpress/issues",
+		"email": "jlawrence@webershandwick.com"
+	},
+	"dependencies": {
+		"yeoman-generator": ">=0.13.4",
+		"rimraf": ">=2.1.4",
+		"semver": ">=2.0.10"
+	},
+	"peerDependencies": {
+		"yo": ">=1.0.4"
+	},
+	"engines": {
+		"node": ">=0.8.0",
+		"npm": ">=1.2.10"
+	},
+	"keywords": [
+		"yeoman",
+		"yeoman-generator",
+		"yo",
+		"wordpress",
+		"generator",
+		"cli",
+		"tool",
+		"cms",
+		"development"
+	]
 }

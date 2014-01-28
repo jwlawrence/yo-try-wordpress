@@ -11,13 +11,13 @@ module.exports = {
 }
 
 var home            = process.env.HOME || process.env.USERPROFILE
-  , configDirectory = path.join(home, '.yeoman-wordpress')
+  , configDirectory = path.join(home, '.generator-try-wordpress')
   , configPath      = path.join(configDirectory, 'config.json')
   , defaults = {
       authorName: ''
-    , authorURI:  ''
-    , themeUrl:   'https://github.com/automattic/_s'
-    , latestVersion: '3.6'
+    , authorURI:  'http://webershandwick.com'
+    , themeUrl:   'https://github.com/WSBaltimore/try-theme'
+    , latestVersion: '3.8.1'
   }
 
 /**
