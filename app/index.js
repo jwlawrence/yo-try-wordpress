@@ -1,11 +1,16 @@
-'use strict';
+//'use strict';
 
-var util = require('util'),
+var wrench = require('wrench'),
+	util = require('util'),
 	path = require('path'),
 	fs = require('fs'),
 	yeoman = require('yeoman-generator'),
+	git = require('simple-git')(),
+	https = require('https'),
+	EventEmitter = require('events').EventEmitter,
 	rimraf = require('rimraf'),
 	exec = require('child_process').exec,
+	mysql = require('mysql'),
 	semver = require('semver'),
 	config = require('./../config.js')
 
@@ -114,6 +119,11 @@ Generator.prototype.askFor = function askFor() {
 			}
 		},
 		{
+			name: 'dbHost',
+			message: 'Database host',
+			default: 'localhost'
+		},
+		{
 			name: 'dbName',
 			message: 'Database name',
 			validate: requiredValidate
@@ -162,6 +172,12 @@ Generator.prototype.askFor = function askFor() {
 			default: self.defaultAuthorURI
 		},
 		{
+			type: 'confirm',
+			name: 'useGit',
+			message: 'Are you using git?',
+			default: true
+		},
+		{
 			name: 'includeRequireJS',
 			type: 'confirm',
 			message: 'Would you like to include RequireJS (for AMD support)?'
@@ -172,6 +188,7 @@ Generator.prototype.askFor = function askFor() {
 
 		// set the property to parse the gruntfile
 		self.url = props.url
+		self.dbHost = props.dbHost
 		self.dbName = props.dbName
 		self.dbUser = props.dbUser
 		self.dbPassword = props.dbPassword
@@ -183,6 +200,7 @@ Generator.prototype.askFor = function askFor() {
 		self.themeName = props.themeName
 		self.authorName = props.authorName
 		self.authorURI = props.authorURI
+		self.useGit = props.useGit
 		self.includeRequireJS = props.includeRequireJS
 
 		// check if the user only gave the repo url or the entire url with /archive/{branch}.tar.gz
@@ -250,6 +268,108 @@ Generator.prototype.createTheme = function createTheme() {
 		})
 }
 
+// wp-config setup
+Generator.prototype.wpAdmin = function() {
+	var cb = this.async(),
+		self = this
+
+	function getSaltKeys(callback) {
+		var ee = new EventEmitter(),
+			keys = '';
+
+		https.get("https://api.wordpress.org/secret-key/1.1/salt/", function(res) {
+			res.on('data', function(d) {
+				keys += d.toString();
+			}).on('end', function() {
+				ee.emit('end', keys);
+			});
+		});
+
+		if (typeof callback === 'function') {
+			ee.on('end', callback);
+		}
+
+		return ee;
+	}
+
+	function createConfigs(saltKeys) {
+		self.log.writeln('Salt keys: ' + JSON.stringify(saltKeys, null, '  '))
+		self.saltKeys = saltKeys
+
+		self.log.writeln('Copying wp-config')
+		self.template('wp-config.php', 'wp-config.php');
+
+		self.log.writeln('Copying local-config')
+		self.template('local-config.php', 'local-config.php');
+		cb();
+	};
+
+	getSaltKeys(createConfigs);
+
+}
+
+/**
+ * TODO: fix callback structure
+ * TODO: fix connection error https://github.com/felixge/node-mysql#connection-options
+ */
+// Create Database
+// Generator.prototype.createDatabase = function() {
+// 	var cb = this.async();
+// 	var self = this;
+
+// 	self.connection = mysql.createConnection({
+// 		host: self.dbHost,
+// 		user: self.dbUser,
+// 		password: self.dbPassword
+// 	});
+
+// 	self.log.writeln('Connecting to Database')
+
+// 	self.connection.connect(function(err) {
+// 		if (err) { self.log.writeln(err) };
+
+// 		self.log.writeln('Creating Database')
+
+// 		self.connection.query('CREATE DATABASE IF NOT EXISTS ' + mysql.escapeId(self.dbName), function(err, rows, fields) {
+// 			if (err) { self.log.writeln(err) };
+
+// 			self.log.writeln('Setting up theme')
+
+// 			var q = [
+// 				"UPDATE " + self.tablePrefix + "options",
+// 				"SET option_value =  " + mysql.escape(self.themeName),
+// 				"WHERE option_name = 'template'",
+// 				"OR option_name = 'stylesheet'"
+// 			].join('\n');
+
+// 			self.connection.query(q, function(err, rows, fields) {
+// 				if (err) { self.log.writeln(err) };
+
+// 				self.log.writeln('Closing database connection')
+
+// 				self.connection.end(function() {
+// 					self.log.writeln('Finished creating database');
+// 					cb();
+// 				});
+// 			});
+
+// 		});
+
+// 	});
+
+// }
+
+// Set some permissions
+Generator.prototype.setPermissions = function() {
+
+	if (fs.existsSync('.')) {
+		this.log.writeln('Setting Permissions: 0755 on .')
+		wrench.chmodSyncRecursive('.', 0755);
+		this.log.writeln('Done setting permissions on .')
+	}
+
+}
+
 // add Require.js if needed
 Generator.prototype.requireJS = function requireJS() {
 	var cb = this.async(),
@@ -275,9 +395,42 @@ Generator.prototype.requireJS = function requireJS() {
 Generator.prototype.createYeomanFiles = function createYeomanFiles() {
 	this.template('Gruntfile.js')
 	this.template('bowerrc', '.bowerrc')
+	this.copy('jshintrc', '.jshintrc')
 	this.copy('package.json', 'package.json')
-	this.copy('gitignore', '.gitignore')
-	this.copy('gitattributes', '.gitattributes')
+	this.copy('editorconfig', '.editorconfig')
+}
+
+// Git setup
+Generator.prototype.initGit = function() {
+
+	var self = this;
+
+	// Using Git?  Init it...
+	if (self.useGit === true) {
+		var cb = this.async();
+
+		// Copy .gitignore & .getattributes files
+		self.log.writeln('Copying .gitignore and .getattributes files')
+		self.copy('gitignore', '.gitignore');
+		self.copy('gitattributes', '.gitattributes')
+		self.log.writeln('Initializing Git')
+
+		// Initialize git, add files, and commit
+		git.init(function(err) {
+			if (err) { self.log.writeln(err) };
+
+			self.log.writeln('Git init complete')
+
+			git.add('.', function(err) {
+				if (err) { self.log.writeln(err) };
+			}).commit('Initial Commit', function(err, d) {
+				if (err) { self.log.writeln(err) };
+				self.log.writeln('Git add and commit complete: ' + JSON.stringify(d, null, '  '));
+				cb();
+			});
+		});
+	}
+
 }
 
 Generator.prototype.endGenerator = function endGenerator() {

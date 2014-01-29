@@ -2,6 +2,7 @@
 *~
 node_modules
 
+local-config.php
 wp-config.php
 wp-content/uploads/
 wp-content/blogs.dir/
