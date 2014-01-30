@@ -174,14 +174,20 @@ Generator.prototype.askFor = function askFor() {
 		{
 			type: 'confirm',
 			name: 'useGit',
-			message: 'Are you using git?',
+			message: 'Init a git repo?',
 			default: true
 		},
 		{
-			name: 'includeRequireJS',
 			type: 'confirm',
-			message: 'Would you like to include RequireJS (for AMD support)?'
+			name: 'useMAMP',
+			message: 'Are you using MAMP?',
+			default: true
 		}
+		// ,{
+		// 	name: 'includeRequireJS',
+		// 	type: 'confirm',
+		// 	message: 'Would you like to include RequireJS (for AMD support)?'
+		// }
 	]
 
 	this.prompt(prompts, function(props) {
@@ -201,6 +207,7 @@ Generator.prototype.askFor = function askFor() {
 		self.authorName = props.authorName
 		self.authorURI = props.authorURI
 		self.useGit = props.useGit
+		self.useMAMP = props.useMAMP
 		self.includeRequireJS = props.includeRequireJS
 
 		// check if the user only gave the repo url or the entire url with /archive/{branch}.tar.gz
@@ -313,61 +320,50 @@ Generator.prototype.wpAdmin = function() {
  * TODO: fix connection error https://github.com/felixge/node-mysql#connection-options
  */
 // Create Database
-// Generator.prototype.createDatabase = function() {
-// 	var cb = this.async();
-// 	var self = this;
+Generator.prototype.createDatabase = function() {
+	if (this.useMAMP === true) {
+		var cb = this.async();
+		var self = this;
 
-// 	self.connection = mysql.createConnection({
-// 		host: self.dbHost,
-// 		user: self.dbUser,
-// 		password: self.dbPassword
-// 	});
+		self.log.writeln('Connecting to Database')
 
-// 	self.log.writeln('Connecting to Database')
+		var connection = mysql.createConnection({
+			socketPath: '/Applications/MAMP/tmp/mysql/mysql.sock',
+			user: self.dbUser,
+			password: self.dbPassword
+		});
 
-// 	self.connection.connect(function(err) {
-// 		if (err) { self.log.writeln(err) };
+		connection.connect(function(err) {
+			if (err) { self.log.writeln(err) };
 
-// 		self.log.writeln('Creating Database')
+			self.log.writeln('Creating Database')
+			connection.query('CREATE DATABASE IF NOT EXISTS ' + mysql.escapeId(self.dbName), function(err, rows, fields) {
+				if (err) { self.log.writeln(err) };
+			});
 
-// 		self.connection.query('CREATE DATABASE IF NOT EXISTS ' + mysql.escapeId(self.dbName), function(err, rows, fields) {
-// 			if (err) { self.log.writeln(err) };
+			// INSTALL WORDPRESS...
 
-// 			self.log.writeln('Setting up theme')
+			// now that db has been created, set the theme
+			// var q = [
+			// 	"USE " + mysql.escapeId(self.dbName) + ";",
+			// 	"UPDATE " + self.tablePrefix + "options",
+			// 	"SET option_value =  " + mysql.escape(self.themeName),
+			// 	"WHERE option_name = 'template'",
+			// 	"OR option_name = 'stylesheet'"
+			// ].join('\n');
 
-// 			var q = [
-// 				"UPDATE " + self.tablePrefix + "options",
-// 				"SET option_value =  " + mysql.escape(self.themeName),
-// 				"WHERE option_name = 'template'",
-// 				"OR option_name = 'stylesheet'"
-// 			].join('\n');
+			// self.log.writeln('Setting up theme')
+			// connection.query(q, function(err, rows, fields) {
+			// 	if (err) { self.log.writeln(err) };
+			// });
 
-// 			self.connection.query(q, function(err, rows, fields) {
-// 				if (err) { self.log.writeln(err) };
+			connection.end(function() {
+				self.log.writeln('db connection closed');
+				cb();
+			});
 
-// 				self.log.writeln('Closing database connection')
-
-// 				self.connection.end(function() {
-// 					self.log.writeln('Finished creating database');
-// 					cb();
-// 				});
-// 			});
-
-// 		});
-
-// 	});
-
-// }
-
-// Set some permissions
-Generator.prototype.setPermissions = function() {
-
-	if (fs.existsSync('.')) {
-		this.log.writeln('Setting Permissions: 0755 on .')
-		wrench.chmodSyncRecursive('.', 0755);
-		this.log.writeln('Done setting permissions on .')
+		});
 	}
-
 }
 
 // add Require.js if needed
@@ -400,6 +396,15 @@ Generator.prototype.createYeomanFiles = function createYeomanFiles() {
 	this.copy('editorconfig', '.editorconfig')
 }
 
+// Set some permissions
+Generator.prototype.setPermissions = function() {
+	if (fs.existsSync('.')) {
+		this.log.writeln('Setting Permissions: 0755 on .')
+		wrench.chmodSyncRecursive('.', 0755);
+		this.log.writeln('Done setting permissions on .')
+	}
+}
+
 // Git setup
 Generator.prototype.initGit = function() {
 
@@ -410,7 +415,6 @@ Generator.prototype.initGit = function() {
 		var cb = this.async();
 
 		// Copy .gitignore & .getattributes files
-		self.log.writeln('Copying .gitignore and .getattributes files')
 		self.copy('gitignore', '.gitignore');
 		self.copy('gitattributes', '.gitattributes')
 		self.log.writeln('Initializing Git')
