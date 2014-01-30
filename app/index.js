@@ -6,6 +6,8 @@ var wrench = require('wrench'),
 	fs = require('fs'),
 	yeoman = require('yeoman-generator'),
 	git = require('simple-git')(),
+	querystring = require('querystring'),
+	request = require('request'),
 	https = require('https'),
 	EventEmitter = require('events').EventEmitter,
 	rimraf = require('rimraf'),
@@ -107,8 +109,34 @@ Generator.prototype.askFor = function askFor() {
 
 	var prompts = [
 		{
+			name: 'wordpressVersion',
+			message: 'Which version of Wordpress do you want?',
+			default: self.latestVersion
+		},
+		{
+			name: 'siteName',
+			message: 'Your WordPress site name',
+			validate: requiredValidate
+		},
+		{
+			name: 'userName',
+			message: 'Your WordPress username',
+			validate: requiredValidate
+		},
+		{
+			type: 'password',
+			name: 'userPassword',
+			message: 'Your WordPress password',
+			validate: requiredValidate
+		},
+		{
+			name: 'userEmail',
+			message: 'Your WordPress email',
+			validate: requiredValidate
+		},
+		{
 			name: 'url',
-			message: 'WordPress URL',
+			message: 'Your WordPress URL',
 			validate: requiredValidate,
 			filter: function(value) {
 				value = value.replace(/\/+$/g, '');
@@ -124,11 +152,6 @@ Generator.prototype.askFor = function askFor() {
 			default: 'localhost'
 		},
 		{
-			name: 'dbName',
-			message: 'Database name',
-			validate: requiredValidate
-		},
-		{
 			name: 'dbUser',
 			message: 'Database user',
 			default: 'root'
@@ -139,14 +162,14 @@ Generator.prototype.askFor = function askFor() {
 			default: 'root'
 		},
 		{
+			name: 'dbName',
+			message: 'Database name',
+			validate: requiredValidate
+		},
+		{
 			name: 'tablePrefix',
 			message: 'Database table prefix',
 			default: 'try_wp_'
-		},
-		{
-			name: 'wordpressVersion',
-			message: 'Which version of Wordpress do you want?',
-			default: self.latestVersion
 		},
 		{
 			name: 'themeBoilerplate',
@@ -180,7 +203,7 @@ Generator.prototype.askFor = function askFor() {
 		{
 			type: 'confirm',
 			name: 'useMAMP',
-			message: 'Are you using MAMP?',
+			message: 'Are you using MAMP? (if so start it now)',
 			default: true
 		}
 		// ,{
@@ -193,6 +216,10 @@ Generator.prototype.askFor = function askFor() {
 	this.prompt(prompts, function(props) {
 
 		// set the property to parse the gruntfile
+		self.siteName = props.siteName
+		self.userName = props.userName
+		self.userPassword = props.userPassword
+		self.userEmail = props.userEmail
 		self.url = props.url
 		self.dbHost = props.dbHost
 		self.dbName = props.dbName
@@ -342,24 +369,42 @@ Generator.prototype.createDatabase = function() {
 			});
 
 			// INSTALL WORDPRESS...
+			self.log.writeln('Installing WordPress');
+			request.post({
+				uri: self.url + '/wp-admin/install.php?step=2',
+				form: {
+					'blog_public': 1,
+					'weblog_title': self.siteTitle,
+					'user_name': self.userName,
+					'admin_password': self.userPassword,
+					'admin_password2': self.userPassword,
+					'admin_email': self.userEmail
+				}
+			}, function (err, res, body) {
+				if (err) { self.log.writeln(err) };
 
-			// now that db has been created, set the theme
-			// var q = [
-			// 	"USE " + mysql.escapeId(self.dbName) + ";",
-			// 	"UPDATE " + self.tablePrefix + "options",
-			// 	"SET option_value =  " + mysql.escape(self.themeName),
-			// 	"WHERE option_name = 'template'",
-			// 	"OR option_name = 'stylesheet'"
-			// ].join('\n');
+				// SETUP THEME
+				self.log.writeln('Setting up theme');
 
-			// self.log.writeln('Setting up theme')
-			// connection.query(q, function(err, rows, fields) {
-			// 	if (err) { self.log.writeln(err) };
-			// });
+				// var q = [
+				// 	"USE " + mysql.escapeId(self.dbName) + " ",
+				// 	"UPDATE '" + self.tablePrefix + "options' ",
+				// 	"SET option_value =  " + mysql.escape(self.themeName) + " ",
+				// 	"WHERE option_name = 'template' ",
+				// 	"OR option_name = 'stylesheet'"
+				// ].join('\n');
 
-			connection.end(function() {
-				self.log.writeln('db connection closed');
-				cb();
+				//var q = "USE yeoman; UPDATE try_wp_options SET option_value = 'try-theme' WHERE option_name = 'template' OR option_name = 'stylesheet'";
+
+				connection.query(q, function(err, rows, fields) {
+					if (err) { self.log.writeln(err) };
+				});
+
+				connection.end(function() {
+					self.log.writeln('db connection closed');
+					cb();
+				});
+
 			});
 
 		});
