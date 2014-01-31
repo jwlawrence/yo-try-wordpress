@@ -352,62 +352,87 @@ Generator.prototype.createDatabase = function() {
 		var cb = this.async();
 		var self = this;
 
-		self.log.writeln('Connecting to Database')
+		function createDb(callback) {
+			self.log.writeln('Connecting to Database')
 
-		var connection = mysql.createConnection({
-			socketPath: '/Applications/MAMP/tmp/mysql/mysql.sock',
-			user: self.dbUser,
-			password: self.dbPassword
-		});
-
-		connection.connect(function(err) {
-			if (err) { self.log.writeln(err) };
-
-			self.log.writeln('Creating Database')
-			connection.query('CREATE DATABASE IF NOT EXISTS ' + mysql.escapeId(self.dbName), function(err, rows, fields) {
-				if (err) { self.log.writeln(err) };
+			var connection = mysql.createConnection({
+				socketPath: '/Applications/MAMP/tmp/mysql/mysql.sock',
+				user: self.dbUser,
+				password: self.dbPassword
 			});
 
-			// INSTALL WORDPRESS...
-			self.log.writeln('Installing WordPress');
-			request.post({
-				uri: self.url + '/wp-admin/install.php?step=2',
-				form: {
-					'blog_public': 1,
-					'weblog_title': self.siteTitle,
-					'user_name': self.userName,
-					'admin_password': self.userPassword,
-					'admin_password2': self.userPassword,
-					'admin_email': self.userEmail
-				}
-			}, function (err, res, body) {
-				if (err) { self.log.writeln(err) };
+			// CONNECT TO SERVER
+			connection.connect(function(err) {
+				if (err) { self.log.writeln(err); cb(); return; };
+
+				// CREATE DB
+				self.log.writeln('Creating Database')
+				connection.query('CREATE DATABASE IF NOT EXISTS ' + mysql.escapeId(self.dbName), function(err, rows, fields) {
+					if (err) { self.log.writeln(err); cb(); return; };
+				});
+
+				// INSTALL WORDPRESS
+				self.log.writeln('Installing WordPress');
+				request.post({
+					uri: self.url + '/wp-admin/install.php?step=2',
+					form: {
+						'blog_public': 1,
+						'weblog_title': self.siteTitle,
+						'user_name': self.userName,
+						'admin_password': self.userPassword,
+						'admin_password2': self.userPassword,
+						'admin_email': self.userEmail
+					}
+				}, function (err, res, body) {
+					if (err) { self.log.writeln(err); cb(); return; };
+
+					// CLOSE CONNECTION
+					connection.end(function() {
+						self.log.writeln('db connection closed');
+						callback();
+					});
+				});
+			});
+		}
+
+		function setupTheme() {
+			self.log.writeln('Connecting to Database')
+
+			var connection = mysql.createConnection({
+				socketPath: '/Applications/MAMP/tmp/mysql/mysql.sock',
+				user: self.dbUser,
+				password: self.dbPassword,
+				database: self.dbName
+			});
+
+			// CONNECT TO DB
+			connection.connect(function(err) {
+				if (err) { self.log.writeln(err); cb(); return; };
 
 				// SETUP THEME
 				self.log.writeln('Setting up theme');
 
-				// var q = [
-				// 	"USE " + mysql.escapeId(self.dbName) + " ",
-				// 	"UPDATE '" + self.tablePrefix + "options' ",
-				// 	"SET option_value =  " + mysql.escape(self.themeName) + " ",
-				// 	"WHERE option_name = 'template' ",
-				// 	"OR option_name = 'stylesheet'"
-				// ].join('\n');
-
-				//var q = "USE yeoman; UPDATE try_wp_options SET option_value = 'try-theme' WHERE option_name = 'template' OR option_name = 'stylesheet'";
+				var q = [
+					"UPDATE " + self.tablePrefix + "options ",
+					"SET option_value =  " + mysql.escape(self.themeName) + " ",
+					"WHERE option_name = 'template' ",
+					"OR option_name = 'stylesheet'"
+				].join('\n');
 
 				connection.query(q, function(err, rows, fields) {
-					if (err) { self.log.writeln(err) };
-				});
+					if (err) { self.log.writeln(err); cb(); return; };
 
-				connection.end(function() {
-					self.log.writeln('db connection closed');
-					cb();
+					// CLOSE CONNECTION
+					connection.end(function() {
+						self.log.writeln('db connection closed');
+						cb();
+					});
 				});
 
 			});
+		}
 
-		});
+		createDb(setupTheme);
 	}
 }
 
