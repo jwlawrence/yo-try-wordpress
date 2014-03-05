@@ -206,11 +206,6 @@ Generator.prototype.askFor = function askFor() {
 			message: 'Are you using MAMP? (if so start it now)',
 			default: true
 		}
-		// ,{
-		// 	name: 'includeRequireJS',
-		// 	type: 'confirm',
-		// 	message: 'Would you like to include RequireJS (for AMD support)?'
-		// }
 	]
 
 	this.prompt(prompts, function(props) {
@@ -235,7 +230,6 @@ Generator.prototype.askFor = function askFor() {
 		self.authorURI = props.authorURI
 		self.useGit = props.useGit
 		self.useMAMP = props.useMAMP
-		self.includeRequireJS = props.includeRequireJS
 
 		// check if the user only gave the repo url or the entire url with /archive/{branch}.tar.gz
 		var tarballLink = (/[.]*archive\/[.]*.*.tar.gz/).test(self.themeBoilerplate)
@@ -303,7 +297,7 @@ Generator.prototype.createTheme = function createTheme() {
 }
 
 // wp-config setup
-Generator.prototype.wpAdmin = function() {
+Generator.prototype.wpConfig = function() {
 	var cb = this.async(),
 		self = this
 
@@ -342,12 +336,8 @@ Generator.prototype.wpAdmin = function() {
 
 }
 
-/**
- * TODO: fix callback structure
- * TODO: fix connection error https://github.com/felixge/node-mysql#connection-options
- */
-// Create Database
-Generator.prototype.createDatabase = function() {
+// Create and configure database
+Generator.prototype.setupDb = function() {
 	if (this.useMAMP === true) {
 		var cb = this.async();
 		var self = this;
@@ -436,31 +426,9 @@ Generator.prototype.createDatabase = function() {
 	}
 }
 
-// add Require.js if needed
-Generator.prototype.requireJS = function requireJS() {
-	var cb = this.async(),
-		self = this
-
-	if (self.includeRequireJS) {
-		this.remote('jrburke', 'requirejs', '2.0.5', function(err, remote) {
-			if (err) {
-				return cb(err)
-			}
-
-			fs.mkdir('app/wp-content/themes/' + self.themeName + '/scripts/vendor', function() {
-				remote.copy('require.js', 'app/wp-content/themes/' + self.themeName + '/scripts/vendors/require.js')
-				cb()
-			})
-		})
-	} else {
-		cb()
-	}
-}
-
 // generate the files to use Yeoman and the git related files
 Generator.prototype.createYeomanFiles = function createYeomanFiles() {
-	this.template('Gruntfile.js')
-	this.template('bowerrc', '.bowerrc')
+	this.template('gulpfile.js')
 	this.copy('jshintrc', '.jshintrc')
 	this.copy('package.json', 'package.json')
 	this.copy('editorconfig', '.editorconfig')
