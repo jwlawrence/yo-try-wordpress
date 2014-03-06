@@ -1,5 +1,5 @@
 // Paths - TODO: make paths dynamic
-var theme = './app/wp-content/themes/<%= themeName %>',
+var theme = './app/wp-content/themes/<%= themeName %>/',
 	scripts = theme + 'scripts/',
 	styles = theme + 'styles/',
 	images = theme + 'images/',
@@ -41,23 +41,13 @@ gulp.task('scripts', function() {
 	// Single entry point to browserify
 	return gulp.src(scripts + 'main.js')
 		.pipe(browserify({
-			shim: {
-				// jquery: {
-				// 	path: scripts + 'vendor/jquery.js',
-				// 	exports: '$'
-				// },
-				// breakpoints: {
-				// 	path: scripts + 'vendor/jquery.breakpoints.js',
-				// 	exports: 'breakpoints'
-				// },
-				// colorbox: {
-				// 	path: scripts + 'vendor/jquery.colorbox.js',
-				// 	exports: 'colorbox'
-				// }
-			},
+			shim: {},
 			insertGlobals: true,
 			debug : true
 		}))
+		.pipe(gulp.dest(dist + 'scripts'))
+		.pipe(uglify())
+		.pipe(rename({ suffix: '.min' }))
 		.pipe(gulp.dest(dist + 'scripts'))
 });
 
