@@ -48,7 +48,9 @@ gulp.task('scripts', function() {
 		.pipe(gulp.dest(dist + 'scripts'))
 		.pipe(uglify())
 		.pipe(rename({ suffix: '.min' }))
+		.pipe(livereload(server))
 		.pipe(gulp.dest(dist + 'scripts'))
+		.pipe(notify({ message: 'Scripts task complete' }));
 });
 
 // Images
