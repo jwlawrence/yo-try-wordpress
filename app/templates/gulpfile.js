@@ -7,6 +7,8 @@ var theme = './app/wp-content/themes/<%= themeName %>/',
 
 // Load plugins
 var gulp = require('gulp'),
+	gutil = require('gulp-util'),
+	plumber = require('gulp-plumber'),
 	browserify = require('gulp-browserify'),
 	less = require('gulp-less'),
 	autoprefixer = require('gulp-autoprefixer'),
@@ -23,9 +25,15 @@ var gulp = require('gulp'),
 	lr = require('tiny-lr'),
 	server = lr();
 
+var onError = function(err) {
+	gutil.beep();
+	console.log(err);
+};
+
 // Styles
 gulp.task('styles', function() {
 	return gulp.src(styles + 'main.less')
+		.pipe(plumber({ errorHandler: onError }))
 		.pipe(less())
 		.pipe(autoprefixer('last 2 version', 'safari 5', 'ie 8', 'ie 9', 'opera 12.1', 'ios 6', 'android 4'))
 		.pipe(gulp.dest(dist + 'styles'))
