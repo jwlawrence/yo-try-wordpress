@@ -1,5 +1,5 @@
 {
-  "name": "try",
+  "name": "<%= themeName %>",
   "version": "0.1.0",
   "description": "",
   "main": "gulpfile.js",

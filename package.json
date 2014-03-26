@@ -1,5 +1,5 @@
 {
-  "name": "generator-try-wordpress",
+  "name": "try-wordpress",
   "version": "1.0.0",
   "description": "Yeoman generator for TRY Wordpress projects and plugins",
   "homepage": "https://github.com/webershandwick/yeoman-wordpress",
