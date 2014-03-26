@@ -1,8 +1,8 @@
 {
   "name": "generator-try-wordpress",
-  "version": "1.4.9",
+  "version": "1.0.0",
   "description": "Yeoman generator for TRY Wordpress projects and plugins",
-  "homepage": "https://github.com/WSBaltimore/yeoman-wordpress",
+  "homepage": "https://github.com/webershandwick/yeoman-wordpress",
   "author": {
     "name": "Josh Lawrence",
     "email": "jlawrence@webershandwick.com",
@@ -10,10 +10,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/WSBaltimore/yeoman-wordpress.git"
+    "url": "https://github.com/webershandwick/yeoman-wordpress.git"
   },
   "bugs": {
-    "url": "https://github.com/WSBaltimore/yeoman-wordpress/issues",
+    "url": "https://github.com/webershandwick/yeoman-wordpress/issues",
     "email": "jlawrence@webershandwick.com"
   },
   "dependencies": {
