@@ -1,6 +1,6 @@
 {
-  "name": "try-wordpress",
-  "version": "1.0.0",
+  "name": "generator-try-wordpress",
+  "version": "1.0.2",
   "description": "Yeoman generator for TRY Wordpress projects and plugins",
   "homepage": "https://github.com/webershandwick/yeoman-wordpress",
   "author": {
@@ -36,13 +36,9 @@
   "keywords": [
     "yeoman",
     "yeoman-generator",
-    "yo",
     "wordpress",
-    "generator",
-    "cli",
-    "tool",
-    "cms",
-    "development"
+    "TRY",
+    "Weber Shandwick"
   ],
   "devDependencies": {
     "grunt": "~0.4.2",
