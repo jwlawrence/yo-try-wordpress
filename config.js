@@ -1,4 +1,3 @@
-
 'use strict';
 
 var path = require('path')
@@ -16,8 +15,8 @@ var home            = process.env.HOME || process.env.USERPROFILE
   , defaults = {
       authorName: ''
     , authorURI:  'http://webershandwick.com'
-    , themeUrl:   'https://github.com/WSBaltimore/try-theme'
-    , latestVersion: '3.8.1'
+    , themeUrl:   'https://github.com/webershandwick/try-theme'
+    , latestVersion: '3.8.2'
   }
 
 /**
