@@ -147,9 +147,7 @@ Generator.prototype.askFor = function askFor() {
 			name: 'tablePrefix',
 			message: 'Database table prefix',
 			default: 'try_wp_'
-		},
-
-		{
+		}, {
 			name: 'themeBoilerplate',
 			message: 'Starter theme (please provide a github link)',
 			default: self.defaultTheme,
