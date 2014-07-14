@@ -32,14 +32,17 @@ util.inherits(Generator, yeoman.generators.NamedBase); // try to find the config
 Generator.prototype.getConfig = function getConfig() {
 	var cb = this.async(),
 		self = this;
+
 	self.configExists = false;
+
 	config.getConfig(function(err, data) {
 		if (!err) {
 			self.configExists = true;
 		}
 		self.defaultAuthorName = data.authorName;
 		self.defaultAuthorURI = data.authorURI;
-		self.defaultTheme = data.themeUrl;
+		self.defaultTheme = data.themeUrl || "https://github.com/webershandwick/try-theme";
+		self.buildTool = data.buildTool || "https://github.com/Yahosh/try-gulp";
 		self.latestVersion = data.latestVersion;
 		cb();
 	});
@@ -49,11 +52,12 @@ Generator.prototype.getConfig = function getConfig() {
 Generator.prototype.getVersion = function getVersion() {
 	var cb = this.async(),
 		self = this;
+
 	this.log.writeln('');
 	this.log.writeln('Trying to get the latest stable version of Wordpress'); // try to get the latest version using the git tags
+
 	try {
-		var version = exec('git ls-remote --tags git://github.com/WordPress/WordPress.git', function(err, stdout,
-			stderr) {
+		var version = exec('git ls-remote --tags git://github.com/WordPress/WordPress.git', function(err, stdout, stderr) {
 			if (err !== null) {
 				self.writeln('exec error: ' + err);
 			} else {
@@ -167,6 +171,13 @@ Generator.prototype.askFor = function askFor() {
 			message: 'Author URI',
 			default: self.defaultAuthorURI
 		}, {
+			name: 'buildTool',
+			message: 'Build tool (please provide a github link)',
+			default: self.buildTool,
+			filter: function(input) {
+				return input.replace(/\ /g, '').toLowerCase();
+			}
+		}, {
 			type: 'confirm',
 			name: 'useGit',
 			message: 'Init a git repo?',
@@ -179,7 +190,7 @@ Generator.prototype.askFor = function askFor() {
 		}
 	];
 
-	this.prompt(prompts, function(props) { // set the property to parse the gruntfile
+	this.prompt(prompts, function(props) {
 		self.siteName = props.siteName;
 		self.userName = props.userName;
 		self.userPassword = props.userPassword;
@@ -197,8 +208,11 @@ Generator.prototype.askFor = function askFor() {
 		self.themeName = props.themeName;
 		self.authorName = props.authorName;
 		self.authorURI = props.authorURI;
+		self.buildTool = props.buildTool;
 		self.useGit = props.useGit;
-		self.useMAMP = props.useMAMP; // check if the user only gave the repo url or the entire url with /archive/{branch}.tar.gz
+		self.useMAMP = props.useMAMP;
+
+		// check if the user only gave the repo url or the entire url with /archive/{branch}.tar.gz
 		var tarballLink = (/[.]*archive\/[.]*.*.tar.gz/).test(self.themeBoilerplate);
 		if (!tarballLink) { // if the user gave the repo url we add the end of the url. we assume he wants the master branch
 			var lastChar = self.themeBoilerplate.substring(self.themeBoilerplate.length - 1);
@@ -208,12 +222,14 @@ Generator.prototype.askFor = function askFor() {
 				self.themeBoilerplate = self.themeBoilerplate + '/archive/master.tar.gz';
 			}
 		}
+
 		// create the config file it does not exist
 		if (!self.configExists) {
 			var values = {
 				authorName: self.authorName,
 				authorURI: self.authorURI,
-				themeUrl: self.themeOriginalURL
+				themeUrl: self.themeOriginalURL,
+				buildTool: self.buildTool
 			};
 			config.createConfig(values, cb);
 		} else {
@@ -226,8 +242,10 @@ Generator.prototype.askFor = function askFor() {
 Generator.prototype.createApp = function createApp() {
 	var cb = this.async(),
 		self = this;
+
 	this.log.writeln('Let\'s download the framework, shall we?');
 	this.log.writeln('Downloading Wordpress version ' + self.wordpressVersion + ' please wait...');
+
 	this.tarball('https://github.com/WordPress/WordPress/archive/' + self.wordpressVersion + '.tar.gz', 'app', cb);
 };
 
@@ -235,7 +253,9 @@ Generator.prototype.createApp = function createApp() {
 Generator.prototype.createTheme = function createTheme() {
 	var cb = this.async(),
 		self = this;
+
 	this.log.writeln('First let\'s remove the built-in themes we will not use');
+
 	fs.readdir('app/wp-content/themes', function(err, files) { // remove the existing themes
 		if (typeof files != 'undefined' && files.length !== 0) {
 			files.forEach(function(file) {
@@ -247,11 +267,24 @@ Generator.prototype.createTheme = function createTheme() {
 				}
 			});
 		}
+
 		self.log.writeln('');
-		self.log.writeln('Now we download the theme'); // create the theme
+		self.log.writeln('Now we download the theme');
+
+		// create the theme
 		self.tarball(self.themeBoilerplate, 'app/wp-content/themes/' + self.themeName, cb);
 	});
 };
+
+// download build tool and unzip
+Generator.prototype.addGulp = function addGulp() {
+	var cb = this.async(),
+		self = this;
+
+	this.log.writeln('Now we\'ll add the Gulp build tool');
+
+    self.tarball(self.buildTool, './', cb);
+}
 
 // wp-config setup
 Generator.prototype.wpConfig = function() {
@@ -261,6 +294,7 @@ Generator.prototype.wpConfig = function() {
 	function getSaltKeys(callback) {
 		var ee = new EventEmitter(),
 			keys = '';
+
 		https.get("https://api.wordpress.org/secret-key/1.1/salt/", function(res) {
 			res.on('data', function(d) {
 				keys += d.toString();
@@ -268,19 +302,24 @@ Generator.prototype.wpConfig = function() {
 				ee.emit('end', keys);
 			});
 		});
+
 		if (typeof callback === 'function') {
 			ee.on('end', callback);
 		}
+
 		return ee;
 	}
 
 	function createConfigs(saltKeys) {
 		self.log.writeln('Salt keys: ' + JSON.stringify(saltKeys, null, '  '));
 		self.saltKeys = saltKeys;
+
 		self.log.writeln('Copying wp-config');
 		self.template('wp-config.php', 'wp-config.php');
+
 		self.log.writeln('Copying local-config');
 		self.template('local-config.php', 'local-config.php');
+
 		cb();
 	}
 	getSaltKeys(createConfigs);
@@ -293,18 +332,22 @@ Generator.prototype.setupDb = function() {
 		var self = this;
 
 		function createDb(callback) {
-			self.log.writeln('Connecting to Database');
+
 			var connection = mysql.createConnection({
 				socketPath: '/Applications/MAMP/tmp/mysql/mysql.sock',
 				user: self.dbUser,
 				password: self.dbPassword
-			}); // CONNECT TO SERVER
+			});
+
+			// CONNECT TO SERVER
+			self.log.writeln('Connecting to Database');
 			connection.connect(function(err) {
 				if (err) {
 					self.log.writeln(err);
 					cb();
 					return;
 				}
+
 				// CREATE DB
 				self.log.writeln('Creating Database');
 				connection.query('CREATE DATABASE IF NOT EXISTS ' + mysql.escapeId(self.dbName), function(err, rows, fields) {
@@ -313,7 +356,9 @@ Generator.prototype.setupDb = function() {
 						cb();
 						return;
 					}
-				}); // INSTALL WORDPRESS
+				});
+
+				// INSTALL WORDPRESS
 				self.log.writeln('Installing WordPress');
 				request.post({
 					uri: self.url + '/wp-admin/install.php?step=2',
@@ -331,9 +376,10 @@ Generator.prototype.setupDb = function() {
 						cb();
 						return;
 					}
+
 					// CLOSE CONNECTION
+					self.log.writeln('Closing Database Conection');
 					connection.end(function() {
-						self.log.writeln('db connection closed');
 						callback();
 					});
 				});
@@ -341,46 +387,53 @@ Generator.prototype.setupDb = function() {
 		}
 
 		function setupTheme() {
-			self.log.writeln('Connecting to Database');
+
 			var connection = mysql.createConnection({
 				socketPath: '/Applications/MAMP/tmp/mysql/mysql.sock',
 				user: self.dbUser,
 				password: self.dbPassword,
 				database: self.dbName
-			}); // CONNECT TO DB
+			});
+
+			// CONNECT TO DB
+			self.log.writeln('Connecting to Database');
 			connection.connect(function(err) {
 				if (err) {
 					self.log.writeln(err);
 					cb();
 					return;
 				}
+
 				// SETUP THEME
-				self.log.writeln('Setting up theme');
+				self.log.writeln('Setting up Theme');
 				var q = ["UPDATE " + self.tablePrefix + "options ", "SET option_value =  " + mysql.escape(self.themeName) +
 					" ", "WHERE option_name = 'template' ", "OR option_name = 'stylesheet'"
 				].join('\n');
+
 				connection.query(q, function(err, rows, fields) {
 					if (err) {
 						self.log.writeln(err);
 						cb();
 						return;
 					}
+
 					// CLOSE CONNECTION
+					self.log.writeln('Closing Database Conection');
 					connection.end(function() {
-						self.log.writeln('db connection closed');
 						cb();
 					});
 				});
 			});
 		}
+
 		createDb(setupTheme);
 	}
 };
 
 // generate the files to use Yeoman and the git related files
 Generator.prototype.createYeomanFiles = function createYeomanFiles() {
-	this.template('gulpfile.js');
-	this.template('package.json');
+	// this.template('gulpfile.js');
+	// this.template('package.json');
 	this.copy('jshintrc', '.jshintrc');
 	this.copy('editorconfig', '.editorconfig');
 };
@@ -397,15 +450,21 @@ Generator.prototype.setPermissions = function() {
 // Git setup
 Generator.prototype.initGit = function() {
 	var self = this; // Using Git?  Init it...
+
 	if (self.useGit === true) {
-		var cb = this.async(); // Copy .gitignore & .getattributes files
+		var cb = this.async();
+
+		// Copy .gitignore & .getattributes files
 		self.copy('gitignore', '.gitignore');
 		self.copy('gitattributes', '.gitattributes');
-		self.log.writeln('Initializing Git'); // Initialize git, add files, and commit
+
+		// Initialize git, add files, and commit
+		self.log.writeln('Initializing Git');
 		git.init(function(err) {
 			if (err) {
 				self.log.writeln(err);
 			}
+
 			self.log.writeln('Git init complete');
 			git.add('.', function(err) {
 				if (err) {
