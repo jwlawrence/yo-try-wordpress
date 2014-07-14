@@ -1,3 +1,0 @@
-{
-    "directory": "app/wp-content/themes/<%= themeName %>/vendor"
-}

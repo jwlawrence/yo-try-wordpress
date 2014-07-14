@@ -435,7 +435,6 @@ Generator.prototype.setupDb = function() {
 
 // generate the files to use Yeoman and the git related files
 Generator.prototype.createYeomanFiles = function createYeomanFiles() {
-	this.template('.bowerrc');
 	this.copy('jshintrc', '.jshintrc');
 	this.copy('editorconfig', '.editorconfig');
 };
