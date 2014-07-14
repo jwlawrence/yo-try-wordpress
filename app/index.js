@@ -118,9 +118,15 @@ Generator.prototype.askFor = function askFor() {
 			name: 'userEmail',
 			message: 'Your WordPress email',
 			validate: requiredValidate
-		},
-
-		{
+		}, {
+			name: 'authorName',
+			message: 'Author name',
+			default: self.defaultAuthorName
+		}, {
+			name: 'authorURI',
+			message: 'Author URI',
+			default: self.defaultAuthorURI
+		}, {
 			name: 'url',
 			message: 'Your WordPress URL',
 			validate: requiredValidate,
@@ -152,24 +158,16 @@ Generator.prototype.askFor = function askFor() {
 			message: 'Database table prefix',
 			default: 'try_wp_'
 		}, {
+			name: 'themeName',
+			message: 'What should the theme directory be named?',
+			default: 'try-theme'
+		}, {
 			name: 'themeBoilerplate',
 			message: 'Starter theme (please provide a github link)',
 			default: self.defaultTheme,
 			filter: function(input) {
 				return input.replace(/\ /g, '').toLowerCase();
 			}
-		}, {
-			name: 'themeName',
-			message: 'What should the theme directory be named?',
-			default: 'try-theme'
-		}, {
-			name: 'authorName',
-			message: 'Author name',
-			default: self.defaultAuthorName
-		}, {
-			name: 'authorURI',
-			message: 'Author URI',
-			default: self.defaultAuthorURI
 		}, {
 			name: 'buildTool',
 			message: 'Build tool (please provide a github link)',
@@ -185,7 +183,7 @@ Generator.prototype.askFor = function askFor() {
 		}, {
 			type: 'confirm',
 			name: 'useMAMP',
-			message: 'Are you using MAMP? (if so start it now)',
+			message: 'Install and config WordPress for MAMP? (if so start MAMP now)',
 			default: true
 		}
 	];
@@ -213,15 +211,20 @@ Generator.prototype.askFor = function askFor() {
 		self.useMAMP = props.useMAMP;
 
 		// check if the user only gave the repo url or the entire url with /archive/{branch}.tar.gz
-		var tarballLink = (/[.]*archive\/[.]*.*.tar.gz/).test(self.themeBoilerplate);
-		if (!tarballLink) { // if the user gave the repo url we add the end of the url. we assume he wants the master branch
-			var lastChar = self.themeBoilerplate.substring(self.themeBoilerplate.length - 1);
-			if (lastChar === '/') {
-				self.themeBoilerplate = self.themeBoilerplate + 'archive/master.tar.gz';
-			} else {
-				self.themeBoilerplate = self.themeBoilerplate + '/archive/master.tar.gz';
+		var gitLinks = [ 'buildTool', 'themeBoilerplate' ];
+
+		gitLinks.forEach(function (el) {
+			var tarballLink = (/[.]*archive\/[.]*.*.tar.gz/).test(self[el]);
+
+			if (!tarballLink) { // if the user gave the repo url we add the end of the url. we assume he wants the master branch
+				var lastChar = self[el].substring(self[el].length - 1);
+				if (lastChar === '/') {
+					self[el] = self[el] + 'archive/master.tar.gz';
+				} else {
+					self[el] = self[el] + '/archive/master.tar.gz';
+				}
 			}
-		}
+		}, self);
 
 		// create the config file it does not exist
 		if (!self.configExists) {
@@ -432,8 +435,7 @@ Generator.prototype.setupDb = function() {
 
 // generate the files to use Yeoman and the git related files
 Generator.prototype.createYeomanFiles = function createYeomanFiles() {
-	// this.template('gulpfile.js');
-	// this.template('package.json');
+	this.template('.bowerrc');
 	this.copy('jshintrc', '.jshintrc');
 	this.copy('editorconfig', '.editorconfig');
 };
@@ -482,6 +484,7 @@ Generator.prototype.initGit = function() {
 };
 
 Generator.prototype.endGenerator = function endGenerator() {
+	var self = this;
 	this.log.writeln('');
 	this.log.writeln('Looks like we\'re done!');
 	this.log.writeln('Visit '+ self.url +' to view your new Wordpress site.');
