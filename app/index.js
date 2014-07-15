@@ -102,6 +102,17 @@ Generator.prototype.askFor = function askFor() {
 			message: 'Which version of Wordpress do you want?',
 			default: self.latestVersion
 		}, {
+			name: 'url',
+			message: 'Your WordPress URL',
+			validate: requiredValidate,
+			filter: function(value) {
+				value = value.replace(/\/+$/g, '');
+				if (!/^http[s]?:\/\//.test(value)) {
+					value = 'http://' + value;
+				}
+				return value;
+			}
+		}, {
 			name: 'siteName',
 			message: 'Your WordPress site name',
 			validate: requiredValidate
@@ -126,17 +137,6 @@ Generator.prototype.askFor = function askFor() {
 			name: 'authorURI',
 			message: 'Author URI',
 			default: self.defaultAuthorURI
-		}, {
-			name: 'url',
-			message: 'Your WordPress URL',
-			validate: requiredValidate,
-			filter: function(value) {
-				value = value.replace(/\/+$/g, '');
-				if (!/^http[s]?:\/\//.test(value)) {
-					value = 'http://' + value;
-				}
-				return value;
-			}
 		}, {
 			name: 'dbHost',
 			message: 'Database host',
@@ -264,6 +264,7 @@ Generator.prototype.createTheme = function createTheme() {
 			files.forEach(function(file) {
 				var pathFile = fs.realpathSync('app/wp-content/themes/' + file),
 					isDirectory = fs.statSync(pathFile).isDirectory();
+
 				if (isDirectory) {
 					rimraf.sync(pathFile);
 					self.log.writeln('Removing ' + pathFile);
