@@ -1,0 +1,9 @@
+## <%= siteName %>
+
+<%= siteName %> is a site built on the TRY starter theme.
+
+## Installation
+
+The "/app" directory contains the public content for this site and should be uploaded to the site's root directory on your server. The additional files and folder in this directory are included for development purposes only and need not be uploaded to production.
+
+If you plan on making use of the included Gulp build tool, make sure you run `npm install` from this directory to install all dependencies. The tool requires node.js and npm be installed on your development machine.

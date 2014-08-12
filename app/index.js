@@ -1,19 +1,19 @@
 //'use strict';
-var wrench = require('wrench'),
-	util = require('util'),
-	path = require('path'),
-	fs = require('fs'),
-	yeoman = require('yeoman-generator'),
-	git = require('simple-git')(),
-	querystring = require('querystring'),
-	request = require('request'),
-	https = require('https'),
-	EventEmitter = require('events').EventEmitter,
-	rimraf = require('rimraf'),
-	exec = require('child_process').exec,
-	mysql = require('mysql'),
-	semver = require('semver'),
-	config = require('./../config.js');
+var wrench = require('wrench');
+var util = require('util');
+var path = require('path');
+var fs = require('fs');
+var yeoman = require('yeoman-generator');
+var git = require('simple-git')();
+//var querystring = require('querystring');
+var request = require('request');
+var https = require('https');
+var EventEmitter = require('events').EventEmitter;
+var rimraf = require('rimraf');
+var exec = require('child_process').exec;
+var mysql = require('mysql');
+var semver = require('semver');
+var config = require('./../config.js');
 
 module.exports = Generator;
 
@@ -39,6 +39,7 @@ Generator.prototype.getConfig = function getConfig() {
 		if (!err) {
 			self.configExists = true;
 		}
+		self.defaultAuthorEmail = data.authorEmail;
 		self.defaultAuthorName = data.authorName;
 		self.defaultAuthorURI = data.authorURI;
 		self.defaultTheme = data.themeUrl || "https://github.com/webershandwick/try-theme";
@@ -128,7 +129,8 @@ Generator.prototype.askFor = function askFor() {
 		}, {
 			name: 'userEmail',
 			message: 'Your WordPress email',
-			validate: requiredValidate
+			validate: requiredValidate,
+			default: self.defaultAuthorEmail
 		}, {
 			name: 'authorName',
 			message: 'Author name',
@@ -316,12 +318,10 @@ Generator.prototype.wpConfig = function() {
 
 	function createConfigs(saltKeys) {
 		self.log.writeln('Salt keys: ' + JSON.stringify(saltKeys, null, '  '));
+		self.log.writeln('');
+
 		self.saltKeys = saltKeys;
-
-		self.log.writeln('Copying wp-config');
 		self.template('wp-config.php', 'wp-config.php');
-
-		self.log.writeln('Copying local-config');
 		self.template('local-config.php', 'local-config.php');
 
 		cb();
@@ -438,6 +438,11 @@ Generator.prototype.setupDb = function() {
 Generator.prototype.createYeomanFiles = function createYeomanFiles() {
 	this.copy('jshintrc', '.jshintrc');
 	this.copy('editorconfig', '.editorconfig');
+	this.copy('htaccess', '.htaccess');
+	this.copy('gitignore', '.gitignore');
+	this.copy('gitattributes', '.gitattributes');
+	this.template('package.json', 'package.json');
+	this.template('README', 'README.md');
 };
 
 // Set some permissions
@@ -451,14 +456,11 @@ Generator.prototype.setPermissions = function() {
 
 // Git setup
 Generator.prototype.initGit = function() {
-	var self = this; // Using Git?  Init it...
+	var self = this;
 
+	// Using Git? Init it project repo
 	if (self.useGit === true) {
 		var cb = this.async();
-
-		// Copy .gitignore & .getattributes files
-		self.copy('gitignore', '.gitignore');
-		self.copy('gitattributes', '.gitattributes');
 
 		// Initialize git, add files, and commit
 		self.log.writeln('Initializing Git');
