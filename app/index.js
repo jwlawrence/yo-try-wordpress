@@ -5,7 +5,7 @@ var path = require('path');
 var fs = require('fs');
 var yeoman = require('yeoman-generator');
 var git = require('simple-git')();
-//var querystring = require('querystring');
+var querystring = require('querystring');
 var request = require('request');
 var https = require('https');
 var EventEmitter = require('events').EventEmitter;
@@ -331,36 +331,33 @@ Generator.prototype.wpConfig = function() {
 
 // Create and configure database
 Generator.prototype.setupDb = function() {
+	var cb = this.async();
+	var self = this;
+
 	if (this.useMAMP === true) {
-		var cb = this.async();
-		var self = this;
+		var connection = mysql.createConnection({
+			socketPath: '/Applications/MAMP/tmp/mysql/mysql.sock',
+			user: self.dbUser,
+			password: self.dbPassword
+		});
 
-		function createDb(callback) {
+		// CONNECT TO SERVER
+		self.log.writeln('Connecting to database server');
+		connection.connect(function(err) {
+			if (err) {
+				self.log.writeln(err);
+				cb();
+				return;
+			}
 
-			var connection = mysql.createConnection({
-				socketPath: '/Applications/MAMP/tmp/mysql/mysql.sock',
-				user: self.dbUser,
-				password: self.dbPassword
-			});
-
-			// CONNECT TO SERVER
-			self.log.writeln('Connecting to Database');
-			connection.connect(function(err) {
+			// CREATE DB
+			self.log.writeln('Creating database');
+			connection.query('CREATE DATABASE IF NOT EXISTS ' + mysql.escapeId(self.dbName), function(err, rows, fields) {
 				if (err) {
 					self.log.writeln(err);
 					cb();
 					return;
 				}
-
-				// CREATE DB
-				self.log.writeln('Creating Database');
-				connection.query('CREATE DATABASE IF NOT EXISTS ' + mysql.escapeId(self.dbName), function(err, rows, fields) {
-					if (err) {
-						self.log.writeln(err);
-						cb();
-						return;
-					}
-				});
 
 				// INSTALL WORDPRESS
 				self.log.writeln('Installing WordPress');
@@ -376,61 +373,45 @@ Generator.prototype.setupDb = function() {
 					}
 				}, function(err, res, body) {
 					if (err) {
+						self.log.writeln('WP install error');
 						self.log.writeln(err);
 						cb();
 						return;
 					}
 
-					// CLOSE CONNECTION
-					self.log.writeln('Closing Database Conection');
-					connection.end(function() {
-						callback();
+					// SETUP THEME
+					self.log.writeln('Configuring WordPress');
+					connection.query("USE " + self.dbName, function (err, rows, fields) {
+					    if (err) {
+							self.log.writeln(err);
+							cb();
+							return;
+						}
+
+						var q = [
+							"UPDATE " + self.tablePrefix + "options ",
+							"SET `option_value` = " + mysql.escape(self.themeName) + " ",
+							"WHERE `option_name` = 'template' ",
+							"OR `option_name` = 'stylesheet';"
+						].join('\n');
+
+						connection.query(q, function(err, rows, fields) {
+							if (err) {
+								self.log.writeln(err);
+								cb();
+								return;
+							}
+
+							// CLOSE CONNECTION
+							self.log.writeln('Closing connection to database server');
+							connection.end(function() {
+								cb();
+							});
+						});
 					});
 				});
 			});
-		}
-
-		function setupTheme() {
-
-			var connection = mysql.createConnection({
-				socketPath: '/Applications/MAMP/tmp/mysql/mysql.sock',
-				user: self.dbUser,
-				password: self.dbPassword,
-				database: self.dbName
-			});
-
-			// CONNECT TO DB
-			self.log.writeln('Connecting to Database');
-			connection.connect(function(err) {
-				if (err) {
-					self.log.writeln(err);
-					cb();
-					return;
-				}
-
-				// SETUP THEME
-				self.log.writeln('Setting up Theme');
-				var q = ["UPDATE " + self.tablePrefix + "options ", "SET option_value =  " + mysql.escape(self.themeName) +
-					" ", "WHERE option_name = 'template' ", "OR option_name = 'stylesheet'"
-				].join('\n');
-
-				connection.query(q, function(err, rows, fields) {
-					if (err) {
-						self.log.writeln(err);
-						cb();
-						return;
-					}
-
-					// CLOSE CONNECTION
-					self.log.writeln('Closing Database Conection');
-					connection.end(function() {
-						cb();
-					});
-				});
-			});
-		}
-
-		createDb(setupTheme);
+		});
 	}
 };
 
