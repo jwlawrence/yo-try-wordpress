@@ -1,9 +1,13 @@
 ## <%= siteName %>
 
-<%= siteName %> is a site built on the TRY starter theme.
+<%= siteName %> is a site built on the TRY starter theme by <%= authorName %> (<%= authorURI %>).
 
 ## Installation
 
-The "/app" directory contains the public content for this site and should be uploaded to the site's root directory on your server. The additional files and folder in this directory are included for development purposes only and need not be uploaded to production.
+Run `npm install` from the project root to install dependencies.
 
-If you plan on making use of the included Gulp build tool, make sure you run `npm install` from this directory to install all dependencies. The tool requires node.js and npm be installed on your development machine.
+Next run `gulp build` to create distribution assets. Run `gulp watch` or `gulp browserSync` during development to process changes on save. All gulp tasks can be found in the gulp folder.
+
+## Overview
+
+The "/app" directory contains the public content for this site and should be uploaded to the the production server's public directory. The additional files and folder in this directory are included for development purposes only and need not be uploaded to production.

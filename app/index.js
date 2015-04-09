@@ -1,21 +1,19 @@
 //'use strict';
-var wrench = require('wrench');
-var util = require('util');
-var path = require('path');
-var fs = require('fs');
-var yeoman = require('yeoman-generator');
-var git = require('simple-git')();
-var querystring = require('querystring');
-var request = require('request');
-var https = require('https');
+var wrench       = require('wrench');
+var util         = require('util');
+var path         = require('path');
+var fs           = require('fs');
+var yeoman       = require('yeoman-generator');
+var git          = require('simple-git')();
+var querystring  = require('querystring');
+var request      = require('request');
+var https        = require('https');
 var EventEmitter = require('events').EventEmitter;
-var rimraf = require('rimraf');
-var exec = require('child_process').exec;
-var mysql = require('mysql');
-var semver = require('semver');
-var config = require('./../config.js');
-
-module.exports = Generator;
+var rimraf       = require('rimraf');
+var exec         = require('child_process').exec;
+var mysql        = require('mysql');
+var semver       = require('semver');
+var config       = require('./../config.js');
 
 function Generator(args, options) {
 	yeoman.generators.Base.apply(this, arguments);
@@ -27,11 +25,12 @@ function Generator(args, options) {
 	});
 }
 
-util.inherits(Generator, yeoman.generators.NamedBase); // try to find the config file and read the infos to set the prompts default values
+util.inherits(Generator, yeoman.generators.NamedBase);
 
+// try to find the config file and read the infos to set the prompts default values
 Generator.prototype.getConfig = function getConfig() {
-	var cb = this.async(),
-		self = this;
+	var cb = this.async();
+	var self = this;
 
 	self.configExists = false;
 
@@ -51,23 +50,25 @@ Generator.prototype.getConfig = function getConfig() {
 
 // get the latest stable version of Wordpress
 Generator.prototype.getVersion = function getVersion() {
-	var cb = this.async(),
-		self = this;
+	var cb = this.async();
+	var self = this;
 
 	this.log.writeln('');
-	this.log.writeln('Trying to get the latest stable version of Wordpress'); // try to get the latest version using the git tags
+	this.log.writeln('Trying to get the latest stable version of Wordpress');
 
+	// try to get the latest version using the git tags
 	try {
-		var version = exec('git ls-remote --tags git://github.com/WordPress/WordPress.git', function(err, stdout, stderr) {
+		var version = exec('git ls-remote --tags git@github.com:WordPress/WordPress.git', function(err, stdout, stderr) {
 			if (err !== null) {
-				self.writeln('exec error: ' + err);
+				self.log.writeln('exec error: ' + err);
 			} else {
-				var pattern = /\d\.\d[\.\d]*/ig,
-					match = stdout.match(pattern),
-					patternShort = /^\d\.\d$/,
-					latestVersion = match[match.length - 1],
-					semverLatestString = latestVersion,
-					semverVersionString = self.latestVersion;
+				var pattern = /\d\.\d[\.\d]*/ig;
+				var match = stdout.match(pattern);
+				var patternShort = /^\d\.\d$/;
+				var latestVersion = match[match.length - 1];
+				var semverLatestString = latestVersion;
+				var semverVersionString = self.latestVersion;
+
 				if (semverLatestString.match(patternShort)) semverLatestString += '.0';
 				if (semverVersionString.match(patternShort)) semverVersionString += '.0';
 				if (semverLatestString !== null && typeof semverLatestString !== 'undefined') { // update config if needed
@@ -86,9 +87,10 @@ Generator.prototype.getVersion = function getVersion() {
 	}
 };
 
+// ask questions
 Generator.prototype.askFor = function askFor() {
-	var cb = this.async(),
-		self = this;
+	var cb = this.async();
+	var self = this;
 
 	// Validate required
 	var requiredValidate = function(value) {
@@ -98,7 +100,8 @@ Generator.prototype.askFor = function askFor() {
 		return true;
 	};
 
-	var prompts = [{
+	var prompts = [
+		{
 			name: 'wordpressVersion',
 			message: 'Which version of Wordpress do you want?',
 			default: self.latestVersion
@@ -115,49 +118,49 @@ Generator.prototype.askFor = function askFor() {
 			}
 		}, {
 			name: 'siteName',
-			message: 'Your WordPress site name',
+			message: 'Enter the name of your WordPress site',
 			validate: requiredValidate
 		}, {
 			name: 'userName',
-			message: 'Your WordPress username',
+			message: 'Enter your WordPress username',
 			validate: requiredValidate
 		}, {
 			type: 'password',
 			name: 'userPassword',
-			message: 'Your WordPress password',
+			message: 'Enter your WordPress password',
 			validate: requiredValidate
 		}, {
 			name: 'userEmail',
-			message: 'Your WordPress email',
+			message: 'Enter your WordPress email address',
 			validate: requiredValidate,
 			default: self.defaultAuthorEmail
 		}, {
 			name: 'authorName',
-			message: 'Author name',
+			message: 'Enter the name of the developer(s) who will build this site',
 			default: self.defaultAuthorName
 		}, {
 			name: 'authorURI',
-			message: 'Author URI',
+			message: 'Enter the URL of the developer(s) who will build this site',
 			default: self.defaultAuthorURI
 		}, {
 			name: 'dbHost',
-			message: 'Database host',
+			message: 'Enter the database host',
 			default: 'localhost'
 		}, {
 			name: 'dbUser',
-			message: 'Database user',
+			message: 'Enter the database username',
 			default: 'root'
 		}, {
 			name: 'dbPassword',
-			message: 'Database password',
+			message: 'Enter the database password',
 			default: 'root'
 		}, {
 			name: 'dbName',
-			message: 'Database name',
+			message: 'Enter the database name',
 			validate: requiredValidate
 		}, {
 			name: 'tablePrefix',
-			message: 'Database table prefix',
+			message: 'Enter the database table prefix',
 			default: 'try_wp_'
 		}, {
 			name: 'themeName',
@@ -180,17 +183,18 @@ Generator.prototype.askFor = function askFor() {
 		}, {
 			type: 'confirm',
 			name: 'useGit',
-			message: 'Init a git repo?',
+			message: 'Initialize project as a git repo?',
 			default: true
 		}, {
 			type: 'confirm',
 			name: 'useMAMP',
-			message: 'Install and config WordPress for MAMP? (if so start MAMP now)',
+			message: 'Install and config WordPress for MAMP? (if so start MAMP and setup a hostname before continuing)',
 			default: true
 		}
 	];
 
 	this.prompt(prompts, function(props) {
+
 		self.siteName = props.siteName;
 		self.userName = props.userName;
 		self.userPassword = props.userPassword;
@@ -245,8 +249,8 @@ Generator.prototype.askFor = function askFor() {
 
 // download the framework and unzip it in the project app/
 Generator.prototype.createApp = function createApp() {
-	var cb = this.async(),
-		self = this;
+	var cb = this.async();
+	var self = this;
 
 	this.log.writeln('Let\'s download the framework, shall we?');
 	this.log.writeln('Downloading Wordpress version ' + self.wordpressVersion + ' please wait...');
@@ -256,10 +260,10 @@ Generator.prototype.createApp = function createApp() {
 
 // remove the basic theme and create a new one
 Generator.prototype.createTheme = function createTheme() {
-	var cb = this.async(),
-		self = this;
+	var cb = this.async();
+	var self = this;
 
-	this.log.writeln('First let\'s remove the built-in themes we will not use');
+	this.log.writeln('Now let\'s remove the built-in themes we will not use');
 
 	fs.readdir('app/wp-content/themes', function(err, files) { // remove the existing themes
 		if (typeof files != 'undefined' && files.length !== 0) {
@@ -275,7 +279,7 @@ Generator.prototype.createTheme = function createTheme() {
 		}
 
 		self.log.writeln('');
-		self.log.writeln('Now we download the theme');
+		self.log.writeln('Now we can download our starter theme');
 
 		// create the theme
 		self.tarball(self.themeBoilerplate, 'app/wp-content/themes/' + self.themeName, cb);
@@ -284,22 +288,22 @@ Generator.prototype.createTheme = function createTheme() {
 
 // download build tool and unzip
 Generator.prototype.addGulp = function addGulp() {
-	var cb = this.async(),
-		self = this;
+	var cb = this.async();
+	var self = this;
 
-	this.log.writeln('Now we\'ll add the Gulp build tool');
+	this.log.writeln('Next, we\'ll add the build tool');
 
     self.tarball(self.buildTool, './', cb);
 }
 
 // wp-config setup
 Generator.prototype.wpConfig = function() {
-	var cb = this.async(),
-		self = this;
+	var cb = this.async();
+	var self = this;
 
 	function getSaltKeys(callback) {
-		var ee = new EventEmitter(),
-			keys = '';
+		var ee = new EventEmitter();
+		var keys = '';
 
 		https.get("https://api.wordpress.org/secret-key/1.1/salt/", function(res) {
 			res.on('data', function(d) {
@@ -417,12 +421,8 @@ Generator.prototype.setupDb = function() {
 
 // generate the files to use Yeoman and the git related files
 Generator.prototype.createYeomanFiles = function createYeomanFiles() {
-	this.copy('jshintrc', '.jshintrc');
-	this.copy('editorconfig', '.editorconfig');
 	this.copy('htaccess', '.htaccess');
-	this.copy('gitignore', '.gitignore');
-	this.copy('gitattributes', '.gitattributes');
-	this.template('package.json', 'package.json');
+	this.template('gulp-config.js', 'gulp/config.js');
 	this.template('README', 'README.md');
 };
 
@@ -444,7 +444,7 @@ Generator.prototype.initGit = function() {
 		var cb = this.async();
 
 		// Initialize git, add files, and commit
-		self.log.writeln('Initializing Git');
+		self.log.writeln('Initializing git repo');
 		git.init(function(err) {
 			if (err) {
 				self.log.writeln(err);
@@ -473,3 +473,5 @@ Generator.prototype.endGenerator = function endGenerator() {
 	this.log.writeln('Visit '+ self.url +' to view your new Wordpress site.');
 	this.log.writeln('');
 };
+
+module.exports = Generator;
