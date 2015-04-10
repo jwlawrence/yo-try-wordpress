@@ -423,6 +423,7 @@ Generator.prototype.setupDb = function() {
 Generator.prototype.createYeomanFiles = function createYeomanFiles() {
 	this.copy('htaccess', '.htaccess');
 	this.template('gulp-config.js', 'gulp/config.js');
+	this.template('Movefile', 'Movefile');
 	this.template('README', 'README.md');
 };
 
