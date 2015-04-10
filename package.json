@@ -1,6 +1,6 @@
 {
   "name": "generator-try-wordpress",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "A Yeoman generator for WordPress sites utilizing the TRY theme",
   "homepage": "https://github.com/Yahosh/yo-try-wordpress",
   "author": {
