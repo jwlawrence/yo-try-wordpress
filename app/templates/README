@@ -4,6 +4,8 @@
 
 ## Installation
 
+You will need to add your own local-config.php and wp-config.php files to the root of your project. Use these templates and provide your own database and table prefix information: https://gist.github.com/Yahosh/0347de9a19ed68c79280
+
 Run `npm install` from the project root to install dependencies.
 
 Next run `gulp build` to create distribution assets. Run `gulp watch` or `gulp browserSync` during development to process changes on save. All gulp tasks can be found in the gulp folder.
