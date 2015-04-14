@@ -17,14 +17,19 @@
     "email": "josh@hirejosh.com"
   },
   "dependencies": {
-    "yeoman-generator": ">=0.13.4",
-    "rimraf": ">=2.1.4",
-    "semver": ">=2.0.10",
-    "simple-git": "~0.5.0",
-    "wrench": "~1.5.6",
-    "mysql": "~2.0.1",
-    "request": "~2.33.0",
-    "simple-git": "^0.5.0"
+    "events": "^1.0.2",
+    "fs": "0.0.2",
+    "https": "^1.0.0",
+    "mysql": "^2.0.1",
+    "path": "^0.11.14",
+    "querystring": "^0.2.0",
+    "request": "^2.33.0",
+    "rimraf": "^2.3.2",
+    "semver": "^4.3.3",
+    "simple-git": "^0.5.0",
+    "util": "^0.10.3",
+    "wrench": "^1.5.8",
+    "yeoman-generator": "^0.19.1"
   },
   "peerDependencies": {
     "yo": ">=1.0.4"
@@ -39,7 +44,5 @@
     "wordpress",
     "TRY"
   ],
-  "devDependencies": {
-
-  }
+  "devDependencies": {}
 }
